@@ -33,5 +33,6 @@
       "prettier --write"
     ],
     "*.{json,md,yml}": "prettier --write"
-  }
+  },
+  "lint": "eslint ."
 }
