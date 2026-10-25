@@ -1,0 +1,22 @@
+{
+  "name": "@theogony/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@theogony/config": "workspace:*",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
+  }
+}
