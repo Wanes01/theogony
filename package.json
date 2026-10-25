@@ -1,6 +1,7 @@
 {
   "name": "theogony",
   "private": true,
+  "type": "module",
   "packageManager": "pnpm@12.15.0",
   "prettier": "@theogony/config",
   "engines": {
@@ -19,13 +20,18 @@
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@theogony/config": "workspace:*",
+    "eslint": "^10.13.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.10",
     "turbo": "^2.11.10",
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,json,md,yml}": "prettier --write"
+    "*.{ts,tsx,js}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml}": "prettier --write"
   }
 }
