@@ -1,0 +1,97 @@
+FILES TO CONSIDER IN THE FUTURE
+===============================
+
+This is a planning scratchpad. These files are NOT written yet.
+Do not create them automatically; they are candidates to be added
+when the corresponding part of the project becomes concrete.
+
+docs/
+-----
+- docs/getting-started.md
+    How to install, run dev, run tests, build for Windows and Android.
+    Will become necessary as soon as the dev workflow stabilizes.
+
+- docs/architecture.md
+    Short, navigable summary of the architecture (maybe extracted from
+    AGENTS.md and specifica-tecnica.md) with diagrams.
+    Useful once the real code diverges from the initial plan.
+
+- docs/coding-conventions.md
+    Detailed coding conventions: naming, folder patterns, import rules,
+    error handling, testing patterns. AGENTS.md has a short version;
+    this file is the long version.
+
+- docs/commit-conventions.md
+    Commit message format (Conventional Commits), branch naming,
+    changelog rules. Currently enforced by commitlint + husky.
+
+- docs/testing-guide.md
+    How to write tests with Vitest/Playwright, test fixtures, how to
+    test `core` pure functions, how to run E2E locally.
+
+- docs/database-schema.md
+    Per-collection RxDB schema and migrations, with diagrams. Extract
+    from specifica-tecnica.md when the real schemas are implemented.
+
+- docs/backup-format.md
+    Detailed backup file format and versioning. Extract from
+    specifica-tecnica.md §11 when the backup implementation starts.
+
+- docs/i18n.md
+    i18n workflow: namespaces, key naming, plural rules, adding a new
+    language. Extract from specifica-tecnica.md §16.1 when needed.
+
+- docs/security.md
+    Threat model, Electron/Capacitor hardening, CSP, import validation.
+    Extract from specifica-tecnica.md §18 when security work starts.
+
+- docs/roadmap.md
+    Detailed roadmap with milestones and task breakdown. The summary
+    lives in AGENTS.md §6 and documento-progetto.md §6.
+
+- docs/adr/
+    Architecture Decision Records: one short file per important
+    decision (RxDB, TipTap, dockview, Leaflet, JSON documents, etc.).
+    Recommended once decisions start being revisited.
+
+.github/
+---------
+- .github/ISSUE_TEMPLATE/bug_report.md
+- .github/ISSUE_TEMPLATE/feature_request.md
+- .github/PULL_REQUEST_TEMPLATE.md
+    Standard GitHub templates. Useful as soon as the team grows.
+
+- .github/workflows/ci.yml
+- .github/workflows/release-android.yml
+- .github/workflows/release-windows.yml
+    Mentioned in the plan; to be written when the apps are buildable.
+
+root
+----
+- CONTRIBUTING.md
+    How to contribute: setup, branch naming, PR process, review rules.
+
+- CHANGELOG.md
+    Generated from Conventional Commits (e.g. conventional-changelog).
+
+- CODE_OF_CONDUCT.md
+    Only if the project becomes public / accepts external contributors.
+
+- LICENSE
+    Choose one (MIT? AGPL?) once the distribution model is decided.
+
+- README.md
+    Exists already. Will need a rewrite once the app runs: screenshots,
+    install instructions, platform support, links to docs/.
+
+- docs/superpowers/specs/
+    Design docs produced by the brainstorming skill for future features
+    (one per feature, dated `YYYY-MM-DD-<topic>-design.md`).
+
+Notes
+-----
+- Keep AGENTS.md short and always-current. Long details go in docs/.
+- When a file in docs/ becomes stable, add a reference to it in
+  AGENTS.md §7 so the model knows when to attach it.
+- Prefer one focused file over a giant one; the model can attach only
+  what it needs.
