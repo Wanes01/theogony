@@ -1,0 +1,31 @@
+{
+  "name": "theogony",
+  "private": true,
+  "packageManager": "pnpm@12.15.0",
+  "prettier": "@theogony/config",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "@theogony/config": "workspace:*",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "turbo": "^2.11.10",
+    "typescript": "^7.0.2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,json,md,yml}": "prettier --write"
+  }
+}

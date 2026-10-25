@@ -1,0 +1,8 @@
+node_modules
+dist
+.turbo
+.env*
+.nvmrc
+coverage
+pnpm-lock.yaml
+android/app/build
