@@ -2,11 +2,11 @@ import type { WorkSpaceTab } from "@components/ui/workspace/types";
 import { useState } from "react";
 
 interface WorkSpaceTabsProps {
-  readonly initialContent: WorkSpaceTab[];
+  readonly initialTabs: WorkSpaceTab[];
 }
 
-export default function WorkSpaceTabs({ initialContent }: WorkSpaceTabsProps) {
-  const [tabs, _] = useState<WorkSpaceTab[]>(initialContent);
+export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
+  const [tabs, _] = useState<WorkSpaceTab[]>(initialTabs);
   const [selectedTab, setSelectedTab] = useState(0);
   return (
     <div>
