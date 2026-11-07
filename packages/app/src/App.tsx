@@ -14,7 +14,7 @@ const mockTabs: WorkSpaceTab[] = [
 
 export function App() {
   return (
-    <div className="p-2">
+    <div className="p-2 bg-slate-200 h-screen">
       <WorkSpaceTabs initialTabs={mockTabs} />
     </div>
   );
