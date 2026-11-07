@@ -13,12 +13,13 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
     <div className="flex flex-col h-full w-full">
       <ul className="flex flex-row gap-2">
         {tabs.map((tab, index) => (
-          <Tab
-            key={index}
-            onClick={() => setSelectedTab(index)}
-            tabTitle={tab.tabTitle}
-            selected={index === selectedTab}
-          />
+          <li key={index}>
+            <Tab
+              onClick={() => setSelectedTab(index)}
+              tabTitle={tab.tabTitle}
+              selected={index === selectedTab}
+            />
+          </li>
         ))}
       </ul>
       <div className="bg-white px-1 border border-slate-200 flex-1">
