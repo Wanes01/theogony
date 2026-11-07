@@ -1,6 +1,10 @@
 {
   "extends": "@theogony/config/tsconfig.base.json",
   "compilerOptions": {
+    "paths": {
+      "@components/*": ["./src/components/*"],
+      "@model/*": ["../shared/src/model/*"]
+    },
     "noEmit": true,
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
