@@ -1,7 +1,7 @@
-type ButtonVariant = "flat"; // | ...;
+type ButtonVariant = "styleless"; // | ...;
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  flat: "",
+  styleless: "",
 };
 
 interface ButtonProps {
@@ -14,7 +14,7 @@ interface ButtonProps {
 export default function Button({
   text,
   onClick,
-  variant = "flat",
+  variant = "styleless",
   className = "",
 }: ButtonProps) {
   return (
