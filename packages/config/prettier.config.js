@@ -3,6 +3,6 @@ export default {
   semi: true,
   singleQuote: false,
   trailingComma: "all",
-  printWidth: 100,
+  printWidth: 80,
   endOfLine: "lf",
 };
