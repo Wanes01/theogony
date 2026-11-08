@@ -18,6 +18,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import SortableTab from "@components/ui/workspace/SortableTab";
+import { useTranslation } from "react-i18next";
 
 interface WorkSpaceTabsProps {
   readonly initialTabs: WorkSpaceTab[];
@@ -31,6 +32,8 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
 
   const listRef = useRef<HTMLUListElement>(null);
   const addRef = useRef<HTMLLIElement>(null);
+
+  const { t } = useTranslation("workspace");
 
   // drag-and-drop sensors
   const sensors = useSensors(
@@ -70,7 +73,8 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
     const id = crypto.randomUUID();
     setTabs((prev) => [
       ...prev,
-      { id, tabTitle: "Placeholder", content: <p>PLACEHOLDER</p> },
+      // TODO: populate with the default panel
+      { id, tabTitle: t("newWorkspace"), content: <p>PLACEHOLDER</p> },
     ]);
     setSelectedId(id);
   }
