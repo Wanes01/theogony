@@ -100,7 +100,10 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
           items={tabs.map((t) => t.id)}
           strategy={horizontalListSortingStrategy}
         >
-          <ul ref={listRef} className="flex flex-row gap-1">
+          <ul
+            ref={listRef}
+            className="flex flex-row gap-1 overflow-x-auto [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:bg-zinc-100 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent scrollbar-thin"
+          >
             {tabs.map((tab) => (
               <SortableTab
                 key={tab.id}
@@ -114,7 +117,7 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
               <Button
                 onClick={handleAddTab}
                 aria-label="Add tab"
-                className="flex aspect-square h-full cursor-pointer items-center justify-center rounded-lg border border-transparent text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                className="flex aspect-square h-full cursor-pointer items-center justify-center rounded-lg border border-transparent text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 py-1"
               >
                 <Icons.Plus className="size-6" />
               </Button>
