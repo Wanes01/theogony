@@ -1,6 +1,6 @@
 import type { WorkSpaceTab } from "@components/ui/workspace/types";
 import Button from "@components/ui/buttons/Button";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Icons } from "@icons";
 import {
   DndContext,
@@ -10,13 +10,13 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type Modifier,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   horizontalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import SortableTab from "@components/ui/workspace/SortableTab";
 
 interface WorkSpaceTabsProps {
@@ -29,6 +29,9 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
     initialTabs[0]?.id ?? null,
   );
 
+  const listRef = useRef<HTMLUListElement>(null);
+  const addRef = useRef<HTMLLIElement>(null);
+
   // drag-and-drop sensors
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -36,6 +39,22 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
       activationConstraint: { delay: 200, tolerance: 5 },
     }),
   );
+
+  // restricts the drag area to the horizontal axis and the tab area itself
+  const restrictToTabsArea: Modifier = ({ transform, draggingNodeRect }) => {
+    const list = listRef.current;
+    const add = addRef.current;
+    if (!draggingNodeRect || !list || !add) return transform;
+
+    const minX = list.getBoundingClientRect().left - draggingNodeRect.left;
+    const maxX = add.getBoundingClientRect().left - draggingNodeRect.right;
+
+    return {
+      ...transform,
+      y: 0,
+      x: Math.min(Math.max(transform.x, minX), maxX),
+    };
+  };
 
   function handleDragEnd({ active, over }: DragEndEvent) {
     if (!over || active.id === over.id) return;
@@ -74,14 +93,14 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
-        modifiers={[restrictToHorizontalAxis]}
+        modifiers={[restrictToTabsArea]}
         onDragEnd={handleDragEnd}
       >
         <SortableContext
           items={tabs.map((t) => t.id)}
           strategy={horizontalListSortingStrategy}
         >
-          <ul className="flex flex-row gap-2">
+          <ul ref={listRef} className="flex flex-row gap-1">
             {tabs.map((tab) => (
               <SortableTab
                 key={tab.id}
@@ -91,7 +110,7 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
                 onDelete={() => handleCloseTab(tab.id)}
               />
             ))}
-            <li className="flex">
+            <li ref={addRef} className="flex">
               <Button
                 onClick={handleAddTab}
                 aria-label="Add tab"
