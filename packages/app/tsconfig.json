@@ -3,6 +3,7 @@
   "compilerOptions": {
     "paths": {
       "@components/*": ["./src/components/*"],
+      "@assets/*": ["./src/assets/*"],
       "@model/*": ["../shared/src/model/*"]
     },
     "noEmit": true,

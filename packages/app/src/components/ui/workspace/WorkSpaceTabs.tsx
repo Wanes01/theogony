@@ -21,6 +21,7 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
             />
           </li>
         ))}
+        <li>ciao</li>
       </ul>
       <div className="bg-white px-1 border border-slate-200 flex-1">
         {tabs[selectedTab] && tabs[selectedTab].content}
