@@ -37,8 +37,8 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
   const selectedTab = tabs.find((t) => t.id === selectedId);
 
   return (
-    <div className="flex flex-col h-full w-full">
-      <ul className="flex flex-row gap-2">
+    <div className="flex flex-col gap-1 h-full w-full">
+      <ul className="flex flex-row gap-1">
         {tabs.map((tab) => (
           <li key={tab.id}>
             <Tab
@@ -49,9 +49,13 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
             />
           </li>
         ))}
-        <li>
-          <Button onClick={handleAddTab}>
-            <Icons.Plus className="text-red-500 h-10" />
+        <li className="flex">
+          <Button
+            onClick={handleAddTab}
+            aria-label="Add tab"
+            className="flex aspect-square h-full cursor-pointer items-center justify-center rounded-lg border border-transparent text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+          >
+            <Icons.Plus className="size-6" />
           </Button>
         </li>
       </ul>
