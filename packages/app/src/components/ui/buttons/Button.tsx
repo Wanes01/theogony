@@ -1,28 +1,26 @@
+import type { ComponentPropsWithoutRef } from "react";
+
 type ButtonVariant = "styleless"; // | ...;
 
 const buttonVariants: Record<ButtonVariant, string> = {
   styleless: "",
 };
 
-interface ButtonProps {
-  readonly text: string;
-  readonly onClick: () => void;
+interface ButtonProps extends ComponentPropsWithoutRef<"button"> {
   readonly variant?: ButtonVariant;
-  readonly className?: string;
 }
 
 export default function Button({
-  text,
-  onClick,
   variant = "styleless",
   className = "",
+  type = "button",
+  ...props
 }: ButtonProps) {
   return (
     <button
-      onClick={onClick}
-      className={`${buttonVariants[variant]} ${className}`}
-    >
-      {text}
-    </button>
+      type={type}
+      className={`${buttonVariants[variant]} ${className}`.trim()}
+      {...props}
+    />
   );
 }

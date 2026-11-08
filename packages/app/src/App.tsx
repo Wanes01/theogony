@@ -3,10 +3,12 @@ import WorkSpaceTabs from "@components/ui/workspace/WorkSpaceTabs";
 
 const mockTabs: WorkSpaceTab[] = [
   {
+    id: crypto.randomUUID(),
     tabTitle: "Workspace 1",
     content: <div>Lmao</div>,
   },
   {
+    id: crypto.randomUUID(),
     tabTitle: "Workspace 2",
     content: <div className="font-black">SUPER LMAO</div>,
   },

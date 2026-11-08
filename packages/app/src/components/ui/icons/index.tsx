@@ -1,6 +1,7 @@
 import type { Icon } from "./types";
 import { twMerge } from "tailwind-merge";
 import Plus from "@assets/icons/plus.svg?react";
+import Cross from "@assets/icons/cross.svg?react";
 
 /**
  * Decorates an `Icon` component by applying a default styling on it.
@@ -14,8 +15,13 @@ function withDefaults(MyIcon: Icon): Icon {
   );
 }
 
+/**
+ * Centralized `Icon` wrapper. Access different icons as
+ * this object properties.
+ */
 export const Icons = {
   Plus: withDefaults(Plus),
+  Cross: withDefaults(Cross),
 } satisfies Record<string, Icon>;
 
 export type IconName = keyof typeof Icons;
