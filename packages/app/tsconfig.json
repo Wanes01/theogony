@@ -4,7 +4,9 @@
     "paths": {
       "@components/*": ["./src/components/*"],
       "@assets/*": ["./src/assets/*"],
-      "@model/*": ["../shared/src/model/*"]
+      "@model/*": ["../shared/src/model/*"],
+      "@icons": ["./src/components/ui/icons"],
+      "@icons/*": ["./src/components/ui/icons/*"]
     },
     "noEmit": true,
     "jsx": "react-jsx",

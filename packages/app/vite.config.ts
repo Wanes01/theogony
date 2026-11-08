@@ -25,6 +25,12 @@ export default defineConfig({
         find: /^@assets\//,
         replacement: fileURLToPath(new URL("./src/assets", import.meta.url)),
       },
+      {
+        find: /^@icons(?=\/|$)/,
+        replacement: fileURLToPath(
+          new URL("./src/components/ui/icons", import.meta.url),
+        ),
+      },
     ],
   },
 });
