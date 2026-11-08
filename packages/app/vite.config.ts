@@ -23,7 +23,7 @@ export default defineConfig({
       },
       {
         find: /^@assets\//,
-        replacement: fileURLToPath(new URL("./src/assets", import.meta.url)),
+        replacement: fileURLToPath(new URL("./src/assets/", import.meta.url)),
       },
       {
         find: /^@icons(?=\/|$)/,

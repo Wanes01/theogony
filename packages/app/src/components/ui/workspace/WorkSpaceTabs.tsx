@@ -1,6 +1,7 @@
 import type { WorkSpaceTab } from "@components/ui/workspace/types";
 import Tab from "@components/ui/workspace/Tab";
 import { useState } from "react";
+import { Icons } from "@icons";
 
 interface WorkSpaceTabsProps {
   readonly initialTabs: WorkSpaceTab[];
@@ -21,7 +22,9 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
             />
           </li>
         ))}
-        <li>ciao</li>
+        <li>
+          <Icons.Plus className="text-red-500 h-10" />
+        </li>
       </ul>
       <div className="bg-white px-1 border border-slate-200 flex-1">
         {tabs[selectedTab] && tabs[selectedTab].content}
