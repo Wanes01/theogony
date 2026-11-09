@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { WorkSpaceTab } from "@components/ui/workspace/types";
-import Tab from "@components/ui/workspace/Tab";
+import type { WorkSpaceTab } from "@components/workspace/types";
+import Tab from "@components/workspace/Tab";
 
 interface SortableTabProps {
   readonly tab: WorkSpaceTab;

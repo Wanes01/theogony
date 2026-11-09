@@ -1,4 +1,4 @@
-import type { WorkSpaceTab } from "@components/ui/workspace/types";
+import type { WorkSpaceTab } from "@components/workspace/types";
 import Button from "@components/ui/buttons/Button";
 import { useRef, useState } from "react";
 import { Icons } from "@icons";
@@ -17,7 +17,7 @@ import {
   horizontalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import SortableTab from "@components/ui/workspace/SortableTab";
+import SortableTab from "@components/workspace/SortableTab";
 import { useTranslation } from "react-i18next";
 
 interface WorkSpaceTabsProps {

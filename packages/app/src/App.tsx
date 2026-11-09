@@ -1,5 +1,5 @@
-import type { WorkSpaceTab } from "@components/ui/workspace/types";
-import WorkSpaceTabs from "@components/ui/workspace/WorkSpaceTabs";
+import type { WorkSpaceTab } from "@components/workspace/types";
+import WorkSpaceTabs from "@components/workspace/WorkSpaceTabs";
 
 const mockTabs: WorkSpaceTab[] = [
   {
