@@ -28,14 +28,14 @@ for (const [path, content] of Object.entries(files)) {
 const source = byLang[SOURCE] ?? {};
 const otherLanguages = Object.keys(byLang).filter((l) => l !== SOURCE);
 
-it(`esiste la lingua sorgente (${SOURCE})`, () => {
+it(`the source language exists (${SOURCE})`, () => {
   expect(Object.keys(source).length).toBeGreaterThan(0);
 });
 
 // ensures that each i18n json file has the same keys
-describe.each(otherLanguages)("lingua %s", (lng) => {
+describe.each(otherLanguages)("language %s", (lng) => {
   it.each(Object.keys(source))(
-    "namespace %s ha le stesse chiavi di it",
+    "namespace %s has the same keys of 'IT'",
     (ns) => {
       expect(byLang[lng]?.[ns] ?? []).toEqual(source[ns]);
     },
