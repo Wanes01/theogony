@@ -22,6 +22,10 @@ export default defineConfig({
         ),
       },
       {
+        find: /^@core\//,
+        replacement: fileURLToPath(new URL("../core/src/", import.meta.url)),
+      },
+      {
         find: /^@assets\//,
         replacement: fileURLToPath(new URL("./src/assets/", import.meta.url)),
       },

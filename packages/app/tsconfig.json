@@ -5,6 +5,7 @@
       "@components/*": ["./src/components/*"],
       "@assets/*": ["./src/assets/*"],
       "@model/*": ["../shared/src/model/*"],
+      "@core/*": ["../core/src/*"],
       "@icons": ["./src/components/ui/icons"],
       "@icons/*": ["./src/components/ui/icons/*"]
     },

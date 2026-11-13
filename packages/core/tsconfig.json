@@ -2,7 +2,10 @@
   "extends": "@theogony/config/tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "types": []
+    "types": [],
+    "paths": {
+      "@core/*": ["./src/*"]
+    }
   },
   "include": ["src"]
 }
