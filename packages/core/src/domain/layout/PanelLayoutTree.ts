@@ -1,4 +1,9 @@
-import type { LayoutNode, PanelId, PanelNode } from "@core/domain/layout/types";
+import type {
+  GroupId,
+  LayoutNode,
+  PanelId,
+  PanelNode,
+} from "@core/domain/layout/types";
 
 export interface PanelLayoutTree {
   /**
@@ -17,11 +22,30 @@ export default function PanelLayoutTree({ root }: PanelLayoutTreeDeps) {
   return new PanelLayoutTreeImpl(root);
 }
 
+/**
+ * An implementation of `PanelLayoutTree`. It performs searches and insertions
+ * starting from the `root` node, without using internal indexes, since the maximum
+ * number of allowed panels is small.
+ */
 class PanelLayoutTreeImpl implements PanelLayoutTree {
-  private root: LayoutNode;
+  private readonly _root: LayoutNode;
 
   constructor(root: LayoutNode) {
-    this.root = root;
+    this._root = root;
+  }
+
+  private findById(
+    from: LayoutNode,
+    id: PanelId | GroupId,
+  ): LayoutNode | undefined {
+    if (from.id === id) return from;
+    if (from.kind === "group") {
+      for (const child of from.children) {
+        const found = this.findById(child, id);
+        if (found) return found;
+      }
+    }
+    return undefined;
   }
 
   find(_: PanelId): PanelNode | undefined {
