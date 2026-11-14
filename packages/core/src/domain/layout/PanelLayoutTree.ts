@@ -1,6 +1,6 @@
 import type { LayoutNode, PanelId, PanelNode } from "@core/domain/layout/types";
 
-export interface LayoutTree {
+export interface PanelLayoutTree {
   /**
    * Finds and returns the `PanelNode` associated with `panelId`.
    * @param panelId the id of the panel to find.
@@ -9,15 +9,15 @@ export interface LayoutTree {
   find(panelId: PanelId): PanelNode | undefined;
 }
 
-interface LayoutTreeDeps {
+interface PanelLayoutTreeDeps {
   root: LayoutNode;
 }
 
-export default function LayoutTree({ root }: LayoutTreeDeps) {
-  return new LayoutTreeImpl(root);
+export default function PanelLayoutTree({ root }: PanelLayoutTreeDeps) {
+  return new PanelLayoutTreeImpl(root);
 }
 
-class LayoutTreeImpl implements LayoutTree {
+class PanelLayoutTreeImpl implements PanelLayoutTree {
   private root: LayoutNode;
 
   constructor(root: LayoutNode) {
