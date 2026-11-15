@@ -51,6 +51,11 @@ export interface PanelLayoutTree {
     index?: number,
     view?: PanelView,
   ): PanelLayoutTree;
+
+  /**
+   * @returns the root node of this tree, as a JSON serializable object.
+   */
+  toJSON(): LayoutNode;
 }
 
 interface PanelLayoutTreeDeps {
@@ -174,6 +179,10 @@ class PanelLayoutTreeImpl implements PanelLayoutTree {
       PanelLayoutTreeImpl.rebuild(path, updatedGroup),
       this._ids,
     );
+  }
+
+  toJSON(): LayoutNode {
+    return this._root;
   }
 
   /**
