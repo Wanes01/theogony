@@ -9,7 +9,7 @@ import type {
 } from "@core/domain/layout/types";
 import { IllegalArgumentError, IllegalStateError } from "@core/errors";
 import { newGroupId, newPanelId } from "@core/ids";
-import { emptyPanel } from "./utils";
+import { emptyPanel } from "@core/domain/layout/utils";
 
 /** Generators of the ids of the nodes created by a `PanelLayoutTree`. */
 export interface IdGenerators {
@@ -19,8 +19,8 @@ export interface IdGenerators {
 
 /**
  * An immutable tree of panels: operations never modify the tree on which they
- * are called, but return a new one. Branches that did not change are shared
- * between the old and the new tree.
+ * are called, but return a new one, so that React can detect component changes.
+ * Branches that did not change are shared between the old and the new tree.
  */
 export interface PanelLayoutTree {
   /**
@@ -33,6 +33,24 @@ export interface PanelLayoutTree {
    * @throws `IllegalArgumentError` if no panel with `panelId` exists in this tree.
    */
   splitPanel(panelId: PanelId, rootGroupAxis?: Axis): PanelLayoutTree;
+
+  /**
+   * Adds a new panel to a group.
+   * @param groupId the id of the group that will contain the new panel.
+   * @param id the id of the new panel; defaults to a newly generated one.
+   * @param index the position of the new panel among the children of the group,
+   * from 0 to the number of children (included); defaults to the end.
+   * @param view the view of the new panel; defaults to an empty one.
+   * @returns a new tree containing the new panel; this tree is left untouched.
+   * @throws `IllegalArgumentError` if no group with `groupId` exists in this
+   * tree, if `index` is out of bounds or if a node with `id` already exists.
+   */
+  addPanelToGroup(
+    groupId: GroupId,
+    id?: PanelId,
+    index?: number,
+    view?: PanelView,
+  ): PanelLayoutTree;
 }
 
 interface PanelLayoutTreeDeps {
@@ -100,6 +118,60 @@ class PanelLayoutTreeImpl implements PanelLayoutTree {
     // The new group takes the place of the panel, even when it is the root
     return new PanelLayoutTreeImpl(
       PanelLayoutTreeImpl.rebuild(path, newGroup),
+      this._ids,
+    );
+  }
+
+  addPanelToGroup(
+    groupId: GroupId,
+    id: PanelId = this._ids.newPanelId(),
+    index?: number,
+    view?: PanelView,
+  ): PanelLayoutTree {
+    const path = this.pathTo(groupId);
+    if (!path) {
+      throw new IllegalArgumentError(
+        `No group with id "${groupId}" exists in this tree.`,
+      );
+    }
+    const group = path.at(-1);
+    if (group?.kind !== "group") {
+      throw new IllegalArgumentError(
+        `Node with id "${groupId}" is not a group.`,
+      );
+    }
+    // `index === group.children.length` is valid: it appends the panel
+    if (
+      index !== undefined &&
+      (!Number.isInteger(index) || index < 0 || index > group.children.length)
+    ) {
+      throw new IllegalArgumentError(
+        `Index ${index} is out of bounds for group "${groupId}" with ${group.children.length} children.`,
+      );
+    }
+    if (this.pathTo(id)) {
+      throw new IllegalArgumentError(
+        `A node with id "${id}" already exists in this tree.`,
+      );
+    }
+
+    const newPanel: PanelNode = {
+      kind: "panel",
+      id,
+      size: 100, // TODO: compute the new size based on the siblings size;
+      view: view ?? { type: "empty" },
+    };
+    const position = index ?? group.children.length;
+    const updatedGroup: GroupNode = {
+      ...group,
+      children: [
+        ...group.children.slice(0, position),
+        newPanel,
+        ...group.children.slice(position),
+      ],
+    };
+    return new PanelLayoutTreeImpl(
+      PanelLayoutTreeImpl.rebuild(path, updatedGroup),
       this._ids,
     );
   }
