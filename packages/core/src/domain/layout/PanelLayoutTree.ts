@@ -4,89 +4,192 @@ import type {
   GroupNode,
   LayoutNode,
   PanelId,
+  PanelNode,
+  PanelView,
 } from "@core/domain/layout/types";
 import { IllegalArgumentError, IllegalStateError } from "@core/errors";
-import { emptyPanel, generateGroup, replaceNodeInGroup } from "./utils";
+import { newGroupId, newPanelId } from "@core/ids";
+import { emptyPanel } from "./utils";
 
-export interface PanelLayoutTree {
-  /**
-   * Splits a panel into a group of subpanels.
-   * @param panelId the id of the panel to split.
-   * @param rootGroupAxis the direction of the group of panels to be used if the panel
-   * is the root of the tree.
-   * @throws `IllegalArgumentError` if no panel with `panelId` exists in this tree.
-   */
-  splitPanel(panelId: PanelId, rootGroupAxis: Axis): void;
-}
-
-interface PanelLayoutTreeDeps {
-  root: LayoutNode;
-}
-
-export default function PanelLayoutTree({ root }: PanelLayoutTreeDeps) {
-  return new PanelLayoutTreeImpl(root);
+/** Generators of the ids of the nodes created by a `PanelLayoutTree`. */
+export interface IdGenerators {
+  newPanelId(): PanelId;
+  newGroupId(): GroupId;
 }
 
 /**
- * An implementation of `PanelLayoutTree`. It performs searches and insertions
- * starting from the `root` node, without using internal indexes, since the maximum
- * number of allowed panels is small.
+ * An immutable tree of panels: operations never modify the tree on which they
+ * are called, but return a new one. Branches that did not change are shared
+ * between the old and the new tree.
+ */
+export interface PanelLayoutTree {
+  /**
+   * Splits a panel into a group of two panels. The new group follows the axis
+   * opposite to the one of the panel's parent.
+   * @param panelId the id of the panel to split.
+   * @param rootGroupAxis the axis of the new group if the panel is the root of
+   * the tree; defaults to `horizontal`.
+   * @returns a new tree with the panel split; this tree is left untouched.
+   * @throws `IllegalArgumentError` if no panel with `panelId` exists in this tree.
+   */
+  splitPanel(panelId: PanelId, rootGroupAxis?: Axis): PanelLayoutTree;
+}
+
+interface PanelLayoutTreeDeps {
+  /** The root of the tree; defaults to a single empty panel. */
+  root?: LayoutNode;
+  /** The id generators; override them in tests to get predictable ids. */
+  ids?: IdGenerators;
+}
+
+export default function PanelLayoutTree({
+  root,
+  ids = { newPanelId, newGroupId },
+}: PanelLayoutTreeDeps = {}): PanelLayoutTree {
+  return new PanelLayoutTreeImpl(
+    root ?? emptyPanel(100, ids.newPanelId()),
+    ids,
+  );
+}
+
+type Position = "before" | "after";
+
+/**
+ * An implementation of `PanelLayoutTree`. It performs searches starting from
+ * the root node, without using internal indexes, since the maximum number of
+ * allowed panels is small.
  */
 class PanelLayoutTreeImpl implements PanelLayoutTree {
-  private _root: LayoutNode;
+  private static readonly NEW_PANEL_DEFAULT_SIZE = 50;
 
-  constructor(root?: LayoutNode) {
-    this._root = root ?? emptyPanel();
+  private readonly _root: LayoutNode;
+  private readonly _ids: IdGenerators;
+
+  constructor(root: LayoutNode, ids: IdGenerators) {
+    this._root = root;
+    this._ids = ids;
   }
 
-  splitPanel(panelId: PanelId, rootGroupAxis: Axis = "horizontal"): void {
-    const panelPath = this.pathTo(this._root, panelId);
-    if (!panelPath) {
+  splitPanel(
+    panelId: PanelId,
+    rootGroupAxis: Axis = "horizontal",
+  ): PanelLayoutTree {
+    const path = this.pathTo(panelId);
+    if (!path) {
       throw new IllegalArgumentError(
-        `No panel with id "${panelId} exists in this tree."`,
+        `No panel with id "${panelId}" exists in this tree.`,
       );
     }
-    const targetPanel = panelPath[panelPath.length - 1];
-    const parentGroup = panelPath[panelPath.length - 2];
-    if (!targetPanel || targetPanel.kind !== "panel") {
+    const target = path.at(-1);
+    if (target?.kind !== "panel") {
+      throw new IllegalArgumentError(
+        `Node with id "${panelId}" is not a panel.`,
+      );
+    }
+    const parent = path.at(-2);
+    if (parent && parent.kind !== "group") {
       throw new IllegalStateError(
-        `PanelGroup with id "${targetPanel?.id}" cannot be a leaf.`,
+        `Node with id "${parent.id}" has children but is not a group.`,
       );
     }
-    const newGroup = generateGroup(
-      parentGroup && parentGroup.kind === "group"
-        ? parentGroup.axis === "horizontal"
-          ? "vertical"
-          : "horizontal"
-        : rootGroupAxis,
-      targetPanel,
+
+    const axis = parent
+      ? PanelLayoutTreeImpl.opposite(parent.axis)
+      : rootGroupAxis;
+    const newGroup = this.generateGroup(axis, target);
+    // The new group takes the place of the panel, even when it is the root
+    return new PanelLayoutTreeImpl(
+      PanelLayoutTreeImpl.rebuild(path, newGroup),
+      this._ids,
     );
-    // the new group is the new root node
-    if (!parentGroup) {
-      this._root = newGroup;
-    } else {
-      replaceNodeInGroup(parentGroup as GroupNode, targetPanel.id, newGroup);
-    }
   }
 
   /**
-   * Computes the path of `LayoutNode`s from `from` to the LayoutNode with id `id`.
-   * @param from the `LayoutNode` from which to start the search.
-   * @param id the id of the target `LayoutNode`.
-   * @returns a list containing the path from `LayoutNode` to the node with ID id;
-   * otherwise, returns undefined
+   * Computes the path of `LayoutNode`s from `from` to the node with id `id`.
+   * @param id the id of the target node.
+   * @param from the `LayoutNode` from which to start the search; defaults to
+   * the root of this tree.
+   * @returns the nodes from `from` (first) to the target (last), or `undefined`
+   * if no node with such id exists under `from`.
    */
   private pathTo(
-    from: LayoutNode,
     id: PanelId | GroupId,
+    from: LayoutNode = this._root,
   ): LayoutNode[] | undefined {
     if (from.id === id) return [from];
     if (from.kind === "group") {
       for (const child of from.children) {
-        const subTree = this.pathTo(child, id);
-        if (subTree) return [from, ...subTree];
+        const subPath = this.pathTo(id, child);
+        if (subPath) return [from, ...subPath];
       }
     }
     return undefined;
+  }
+
+  /**
+   * Generates a new `GroupNode` out of a panel that gets split.
+   * @param axis the axis that the new group must follow.
+   * @param oldPanel the `PanelNode` that gets split.
+   * @param newPanelPosition where the new panel is placed respect to `oldPanel`.
+   * @param newPanelView the view of the new panel; defaults to an empty one.
+   * @returns a group containing the old and the new panel, in the specified order.
+   */
+  private generateGroup(
+    axis: Axis,
+    oldPanel: PanelNode,
+    newPanelPosition: Position = "after",
+    newPanelView: PanelView = { type: "empty" },
+  ): GroupNode {
+    const newPanelSize = PanelLayoutTreeImpl.NEW_PANEL_DEFAULT_SIZE;
+    const newPanel: PanelNode = {
+      kind: "panel",
+      id: this._ids.newPanelId(),
+      view: newPanelView,
+      size: newPanelSize,
+    };
+    const updatedOldPanel: PanelNode = {
+      ...oldPanel,
+      size: 100 - newPanelSize,
+    };
+    return {
+      kind: "group",
+      id: this._ids.newGroupId(),
+      axis,
+      size: oldPanel.size,
+      children:
+        newPanelPosition === "before"
+          ? [newPanel, updatedOldPanel]
+          : [updatedOldPanel, newPanel],
+    };
+  }
+
+  /**
+   * Replaces the last node of `path` with `replacement` and rebuilds its
+   * ancestors. The branches outside the path remain the same objects.
+   * @param path the nodes from the root (first) to the node to replace (last);
+   * every node but the last one must be a `GroupNode`.
+   * @returns the new root.
+   */
+  private static rebuild(
+    path: LayoutNode[],
+    replacement: LayoutNode,
+  ): LayoutNode {
+    let current = replacement;
+    for (let i = path.length - 2; i >= 0; i--) {
+      const ancestor = path[i] as GroupNode; // every ancestor is a group
+      const replaced = path[i + 1];
+      const updated = current;
+      current = {
+        ...ancestor,
+        children: ancestor.children.map((child) =>
+          child === replaced ? updated : child,
+        ),
+      };
+    }
+    return current;
+  }
+
+  private static opposite(axis: Axis): Axis {
+    return axis === "horizontal" ? "vertical" : "horizontal";
   }
 }
