@@ -1,6 +1,9 @@
 import type {
   Axis,
+  GroupId,
   GroupNode,
+  LayoutNode,
+  PanelId,
   PanelNode,
   PanelView,
 } from "@core/domain/layout/types";
@@ -36,21 +39,17 @@ const NEW_PANEL_DEFAULT_SIZE = 50;
  * Generates a new `GroupNode`.
  *
  * @param axis the axis that the new group must follow.
- * @param groupSize the size of the new group respect to its father.
  * @param oldPanel the `PanelNode` that got split to generate this group.
  * @param newPanelPosition where the new panel must be inserted respect to the `oldPanel`; default to `after`.
  * @param newPanelView the `PanelView` used to populate the new panel; default to an empty one.
  * @returns a new `GroupNode` with the old and newly created panel, in the specified order.
- * @throws `IllegalArgumentException` if `groupSize` is outside the interval [0, 100].
  */
 export const generateGroup = (
   axis: Axis,
-  groupSize: number,
   oldPanel: PanelNode,
   newPanelPosition: Position = "after",
   newPanelView?: PanelView,
 ): GroupNode => {
-  throwOnIllegalSize(groupSize);
   const newPanel: PanelNode = newPanelView
     ? {
         kind: "panel",
@@ -71,7 +70,30 @@ export const generateGroup = (
     kind: "group",
     id: newGroupId(),
     axis,
-    size: groupSize,
+    size: oldPanel.size,
     children,
   };
+};
+
+/**
+ * Replaces the node with the specified id in a `GroupNode`.
+ * @param group the group on which the replacement will occur.
+ * @param targetNodeId the id of the node to replace.
+ * @param replacement the `LayoutNode` acting as a replacement.
+ * @throws `IllegalArgumentError` if no node with `id` exists in `group`.
+ */
+export const replaceNodeInGroup = (
+  group: GroupNode,
+  targetNodeId: PanelId | GroupId,
+  replacement: LayoutNode,
+): void => {
+  const targetNodeIndex = group.children.findIndex(
+    (node) => node.id === targetNodeId,
+  );
+  if (targetNodeIndex < 0) {
+    throw new IllegalArgumentError(
+      `GroupNode with id "${group.id} has no child node with id "${targetNodeId}"`,
+    );
+  }
+  group.children[targetNodeIndex] = replacement;
 };
