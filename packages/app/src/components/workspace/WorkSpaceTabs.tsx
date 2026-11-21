@@ -129,9 +129,7 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
           </ul>
         </SortableContext>
       </DndContext>
-      <div className="bg-white px-1 border border-slate-200 flex-1">
-        {selectedTab?.content}
-      </div>
+      <div className="flex-1">{selectedTab?.content}</div>
     </div>
   );
 }
