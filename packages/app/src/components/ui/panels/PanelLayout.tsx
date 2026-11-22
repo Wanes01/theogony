@@ -6,13 +6,12 @@ import {
   useState,
 } from "react";
 import PanelLayoutTree from "@core/domain/layout/PanelLayoutTree";
-import type { GroupId, PanelId } from "@core/domain/layout/types";
+import type { Axis, PanelId } from "@core/domain/layout/types";
 import { LayoutNodeView } from "./LayoutNodeView";
 
 /** actions that can be performed on a LayoutNode */
 interface LayoutActions {
-  split(id: PanelId): void;
-  addPanel(groupId: GroupId): void;
+  split(id: PanelId, axis: Axis): void;
 }
 
 const LayoutActionsContext = createContext<LayoutActions | null>(null);
@@ -28,14 +27,10 @@ export default function PanelLayout() {
   const [tree, setTree] = useState(() => PanelLayoutTree());
 
   const split = useCallback(
-    (id: PanelId) => setTree((t) => t.splitPanel(id)),
+    (id: PanelId, axis: Axis) => setTree((t) => t.splitPanel(id, axis)),
     [],
   );
-  const addPanel = useCallback(
-    (groupId: GroupId) => setTree((t) => t.addPanelToGroup(groupId)),
-    [],
-  );
-  const actions = useMemo(() => ({ split, addPanel }), [split, addPanel]);
+  const actions = useMemo(() => ({ split }), [split]);
 
   return (
     <LayoutActionsContext.Provider value={actions}>

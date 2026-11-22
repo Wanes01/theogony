@@ -4,7 +4,7 @@ import { GroupView } from "./GroupView";
 import { PanelContainer } from "./PanelContainer";
 
 interface LayoutNodeViewProps {
-  node: LayoutNode;
+  readonly node: LayoutNode;
 }
 
 /** A general representation of a single panel or a group of panels */

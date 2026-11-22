@@ -24,33 +24,19 @@ export interface IdGenerators {
  */
 export interface PanelLayoutTree {
   /**
-   * Splits a panel into a group of two panels. The new group follows the axis
-   * opposite to the one of the panel's parent.
+   * Splits a panel in two along the given axis. If the parent group already
+   * follows `axis` (or the panel is the root and has no parent), the behaviour
+   * differs:
+   * - same axis as the parent: a new sibling is inserted right after the panel
+   *   and the panel's space is split in half between the two;
+   * - different axis, or panel is the root: the panel is replaced by a new
+   *   group following `axis`, containing the old and the new panel.
    * @param panelId the id of the panel to split.
-   * @param rootGroupAxis the axis of the new group if the panel is the root of
-   * the tree; defaults to `horizontal`.
+   * @param axis the axis along which the panels will be laid out.
    * @returns a new tree with the panel split; this tree is left untouched.
    * @throws `IllegalArgumentError` if no panel with `panelId` exists in this tree.
    */
-  splitPanel(panelId: PanelId, rootGroupAxis?: Axis): PanelLayoutTree;
-
-  /**
-   * Adds a new panel to a group.
-   * @param groupId the id of the group that will contain the new panel.
-   * @param id the id of the new panel; defaults to a newly generated one.
-   * @param index the position of the new panel among the children of the group,
-   * from 0 to the number of children (included); defaults to the end.
-   * @param view the view of the new panel; defaults to an empty one.
-   * @returns a new tree containing the new panel; this tree is left untouched.
-   * @throws `IllegalArgumentError` if no group with `groupId` exists in this
-   * tree, if `index` is out of bounds or if a node with `id` already exists.
-   */
-  addPanelToGroup(
-    groupId: GroupId,
-    id?: PanelId,
-    index?: number,
-    view?: PanelView,
-  ): PanelLayoutTree;
+  splitPanel(panelId: PanelId, axis: Axis): PanelLayoutTree;
 
   /**
    * @returns the root node of this tree, as a JSON serializable object.
@@ -93,10 +79,7 @@ class PanelLayoutTreeImpl implements PanelLayoutTree {
     this._ids = ids;
   }
 
-  splitPanel(
-    panelId: PanelId,
-    rootGroupAxis: Axis = "horizontal",
-  ): PanelLayoutTree {
+  splitPanel(panelId: PanelId, axis: Axis): PanelLayoutTree {
     const path = this.pathTo(panelId);
     if (!path) {
       throw new IllegalArgumentError(
@@ -116,69 +99,41 @@ class PanelLayoutTreeImpl implements PanelLayoutTree {
       );
     }
 
-    const axis = parent
-      ? PanelLayoutTreeImpl.opposite(parent.axis)
-      : rootGroupAxis;
+    // Same axis as the parent: no need for a nested group, add a sibling.
+    if (parent && parent.axis === axis) {
+      const updatedParent = this.splitIntoSiblings(parent, target);
+      return new PanelLayoutTreeImpl(
+        PanelLayoutTreeImpl.rebuild(path.slice(0, -1), updatedParent),
+        this._ids,
+      );
+    }
+
     const newGroup = this.generateGroup(axis, target);
-    // The new group takes the place of the panel, even when it is the root
     return new PanelLayoutTreeImpl(
       PanelLayoutTreeImpl.rebuild(path, newGroup),
       this._ids,
     );
   }
 
-  addPanelToGroup(
-    groupId: GroupId,
-    id: PanelId = this._ids.newPanelId(),
-    index?: number,
-    view?: PanelView,
-  ): PanelLayoutTree {
-    const path = this.pathTo(groupId);
-    if (!path) {
-      throw new IllegalArgumentError(
-        `No group with id "${groupId}" exists in this tree.`,
-      );
-    }
-    const group = path.at(-1);
-    if (group?.kind !== "group") {
-      throw new IllegalArgumentError(
-        `Node with id "${groupId}" is not a group.`,
-      );
-    }
-    // `index === group.children.length` is valid: it appends the panel
-    if (
-      index !== undefined &&
-      (!Number.isInteger(index) || index < 0 || index > group.children.length)
-    ) {
-      throw new IllegalArgumentError(
-        `Index ${index} is out of bounds for group "${groupId}" with ${group.children.length} children.`,
-      );
-    }
-    if (this.pathTo(id)) {
-      throw new IllegalArgumentError(
-        `A node with id "${id}" already exists in this tree.`,
-      );
-    }
-
+  /**
+   * Inserts a new empty panel right after `target` in `parent`, splitting the
+   * target's size in half between the two.
+   * @returns the updated parent group.
+   */
+  private splitIntoSiblings(parent: GroupNode, target: PanelNode): GroupNode {
+    const halfSize = target.size / 2;
     const newPanel: PanelNode = {
       kind: "panel",
-      id,
-      size: 100, // TODO: compute the new size based on the siblings size;
-      view: view ?? { type: "empty" },
+      id: this._ids.newPanelId(),
+      view: { type: "empty" },
+      size: halfSize,
     };
-    const position = index ?? group.children.length;
-    const updatedGroup: GroupNode = {
-      ...group,
-      children: [
-        ...group.children.slice(0, position),
-        newPanel,
-        ...group.children.slice(position),
-      ],
+    return {
+      ...parent,
+      children: parent.children.flatMap((child) =>
+        child === target ? [{ ...target, size: halfSize }, newPanel] : [child],
+      ),
     };
-    return new PanelLayoutTreeImpl(
-      PanelLayoutTreeImpl.rebuild(path, updatedGroup),
-      this._ids,
-    );
   }
 
   toJSON(): LayoutNode {
@@ -268,9 +223,5 @@ class PanelLayoutTreeImpl implements PanelLayoutTree {
       };
     }
     return current;
-  }
-
-  private static opposite(axis: Axis): Axis {
-    return axis === "horizontal" ? "vertical" : "horizontal";
   }
 }
