@@ -39,6 +39,19 @@ export interface PanelLayoutTree {
   splitPanel(panelId: PanelId, axis: Axis): PanelLayoutTree;
 
   /**
+   * Updates the sizes of the children of a group.
+   * @param groupId the id of the group whose children are resized.
+   * @param sizes the new size of each child, keyed by child id; children not
+   * listed keep their size.
+   * @returns a new tree with the updated sizes, or this same tree if nothing changed.
+   * @throws `IllegalArgumentError` if no group with `groupId` exists in this tree.
+   */
+  resizeGroup(
+    groupId: GroupId,
+    sizes: Readonly<Record<PanelId | GroupId, number>>,
+  ): PanelLayoutTree;
+
+  /**
    * @returns the root node of this tree, as a JSON serializable object.
    */
   toJSON(): LayoutNode;
@@ -134,6 +147,38 @@ class PanelLayoutTreeImpl implements PanelLayoutTree {
         child === target ? [{ ...target, size: halfSize }, newPanel] : [child],
       ),
     };
+  }
+
+  resizeGroup(
+    groupId: GroupId,
+    sizes: Readonly<Record<PanelId | GroupId, number>>,
+  ): PanelLayoutTree {
+    const path = this.pathTo(groupId);
+    if (!path) {
+      throw new IllegalArgumentError(
+        `No group with id "${groupId}" exists in this tree.`,
+      );
+    }
+    const group = path.at(-1);
+    if (group?.kind !== "group") {
+      throw new IllegalArgumentError(
+        `Node with id "${groupId}" is not a group.`,
+      );
+    }
+
+    let changed = false;
+    const children = group.children.map((child) => {
+      const size = sizes[child.id];
+      if (size === undefined || size === child.size) return child;
+      changed = true;
+      return { ...child, size };
+    });
+    if (!changed) return this; // avoids a useless re-render
+
+    return new PanelLayoutTreeImpl(
+      PanelLayoutTreeImpl.rebuild(path, { ...group, children }),
+      this._ids,
+    );
   }
 
   toJSON(): LayoutNode {
