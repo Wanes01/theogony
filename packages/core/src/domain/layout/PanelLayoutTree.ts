@@ -76,6 +76,14 @@ export interface PanelLayoutTree {
   ): PanelLayoutTree;
 
   /**
+   * Returns whether `id` node is the root node.
+   * @param id the id of the panel/group of panels.
+   * @returns `true` if the node with `id` is the root note, `false` otherwise.
+   * @throws `IllegalArgumentError` if no node with `id` exists in this tree.
+   */
+  isRoot(id: PanelId | GroupId): boolean;
+
+  /**
    * @returns the root node of this tree, as a JSON serializable object.
    */
   toJSON(): LayoutNode;
@@ -175,6 +183,12 @@ class PanelLayoutTreeImpl implements PanelLayoutTree {
     if (children === group.node.children) return this; // to avoid a useless re-render
 
     return this.withRoot(replaceNode(group, { ...group.node, children }));
+  }
+
+  isRoot(id: PanelId | GroupId): boolean {
+    // used to throw on illegal id
+    const location = this.find(id, id.startsWith("panel") ? "panel" : "group");
+    return location.node.id === this._root.id;
   }
 
   toJSON(): LayoutNode {

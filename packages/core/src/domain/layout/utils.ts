@@ -32,8 +32,6 @@ export const emptyPanel = (
   return { kind: "panel", id, size, view: { type: "empty" } };
 };
 
-// -- Pure helpers (they never touch `this`, so they could live in utils) --
-
 /**
  * Where a node sits in the tree. Since only groups have children, every
  * ancestor is necessarily a `GroupNode`.
