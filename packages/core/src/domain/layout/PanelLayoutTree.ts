@@ -9,7 +9,18 @@ import type {
 } from "@core/domain/layout/types";
 import { IllegalArgumentError, IllegalStateError } from "@core/errors";
 import { newGroupId, newPanelId } from "@core/ids";
-import { emptyPanel } from "@core/domain/layout/utils";
+import {
+  clearSlaveReferences,
+  collapseGroup,
+  emptyPanel,
+  fitSizes,
+  mapShared,
+  parentOf,
+  replaceChild,
+  replaceNode,
+  sumSizes,
+  type NodeLocation,
+} from "@core/domain/layout/utils";
 
 /** Generators of the ids of the nodes created by a `PanelLayoutTree`. */
 export interface IdGenerators {
@@ -37,6 +48,19 @@ export interface PanelLayoutTree {
    * @throws `IllegalArgumentError` if no panel with `panelId` exists in this tree.
    */
   splitPanel(panelId: PanelId, axis: Axis): PanelLayoutTree;
+
+  /**
+   * Removes a panel. The space it occupied is given to its siblings, in
+   * proportion to their current size. If a single sibling remains, the parent
+   * group is replaced by that sibling; if that sibling is a group following the
+   * same axis as the grandparent, its children are merged into the grandparent.
+   * Any `slavePanelId` pointing to the removed panel is cleared.
+   * @param panelId the id of the panel to remove.
+   * @returns a new tree without the panel; this tree is left untouched.
+   * @throws `IllegalArgumentError` if no panel with `panelId` exists in this
+   * tree, or if it is the only panel of the tree.
+   */
+  removePanel(panelId: PanelId): PanelLayoutTree;
 
   /**
    * Updates the sizes of the children of a group.
@@ -93,39 +117,121 @@ class PanelLayoutTreeImpl implements PanelLayoutTree {
   }
 
   splitPanel(panelId: PanelId, axis: Axis): PanelLayoutTree {
-    const path = this.pathTo(panelId);
-    if (!path) {
-      throw new IllegalArgumentError(
-        `No panel with id "${panelId}" exists in this tree.`,
-      );
-    }
-    const target = path.at(-1);
-    if (target?.kind !== "panel") {
-      throw new IllegalArgumentError(
-        `Node with id "${panelId}" is not a panel.`,
-      );
-    }
-    const parent = path.at(-2);
-    if (parent && parent.kind !== "group") {
-      throw new IllegalStateError(
-        `Node with id "${parent.id}" has children but is not a group.`,
-      );
-    }
+    const panel = this.find<PanelNode>(panelId, "panel");
+    const parent = parentOf(panel);
 
     // Same axis as the parent: no need for a nested group, add a sibling.
-    if (parent && parent.axis === axis) {
-      const updatedParent = this.splitIntoSiblings(parent, target);
-      return new PanelLayoutTreeImpl(
-        PanelLayoutTreeImpl.rebuild(path.slice(0, -1), updatedParent),
-        this._ids,
+    if (parent?.node.axis === axis) {
+      return this.withRoot(
+        replaceNode(parent, this.splitIntoSiblings(parent.node, panel.node)),
+      );
+    }
+    return this.withRoot(
+      replaceNode(panel, this.generateGroup(axis, panel.node)),
+    );
+  }
+
+  removePanel(panelId: PanelId): PanelLayoutTree {
+    const panel = this.find<PanelNode>(panelId, "panel");
+    const parent = parentOf(panel);
+    if (!parent) {
+      throw new IllegalArgumentError(
+        "Cannot remove the only panel of the tree.",
       );
     }
 
-    const newGroup = this.generateGroup(axis, target);
-    return new PanelLayoutTreeImpl(
-      PanelLayoutTreeImpl.rebuild(path, newGroup),
-      this._ids,
-    );
+    const { children: remaining } = replaceChild(parent.node, panel.node);
+    const [first, ...others] = remaining;
+    if (!first) {
+      throw new IllegalStateError(
+        `Group "${parent.node.id}" had a single child.`,
+      );
+    }
+
+    const newRoot =
+      others.length === 0
+        ? collapseGroup(parent, first) // the group is no longer needed
+        : replaceNode(parent, {
+            ...parent.node,
+            // the freed space goes to the siblings, proportionally
+            children: fitSizes(remaining, sumSizes(parent.node.children)),
+          });
+
+    return this.withRoot(clearSlaveReferences(newRoot, panelId));
+  }
+
+  resizeGroup(
+    groupId: GroupId,
+    sizes: Readonly<Record<PanelId | GroupId, number>>,
+  ): PanelLayoutTree {
+    const group = this.find<GroupNode>(groupId, "group");
+
+    const children = mapShared(group.node.children, (child): LayoutNode => {
+      const size = sizes[child.id];
+      return size === undefined || size === child.size
+        ? child
+        : { ...child, size };
+    });
+    if (children === group.node.children) return this; // to avoid a useless re-render
+
+    return this.withRoot(replaceNode(group, { ...group.node, children }));
+  }
+
+  toJSON(): LayoutNode {
+    return this._root;
+  }
+
+  private withRoot(root: LayoutNode): PanelLayoutTree {
+    return new PanelLayoutTreeImpl(root, this._ids);
+  }
+
+  /**
+   * Finds the node with id `id` and checks that it is of the expected kind.
+   * @throws `IllegalArgumentError` if there is no such node, or it is of another kind.
+   */
+  private find<N extends LayoutNode>(
+    id: N["id"],
+    kind: N["kind"],
+  ): NodeLocation<N> {
+    const location = this.locate(id);
+    if (!location) {
+      throw new IllegalArgumentError(
+        `No ${kind} with id "${id}" exists in this tree.`,
+      );
+    }
+    if (location.node.kind !== kind) {
+      throw new IllegalArgumentError(`Node with id "${id}" is not a ${kind}.`);
+    }
+    return location as NodeLocation<N>;
+  }
+
+  /**
+   * Looks for the node with id `id`, starting from `from`.
+   * @param ancestors the groups between the root and `from`, used by recursion.
+   * @returns the location of the node, or `undefined` if no node under `from`
+   * has such id.
+   */
+  private locate(
+    id: PanelId | GroupId,
+    from: LayoutNode = this._root,
+    ancestors: GroupNode[] = [],
+  ): NodeLocation | undefined {
+    if (from.id === id) return { node: from, ancestors };
+    if (from.kind !== "group") return undefined;
+
+    const path = [...ancestors, from];
+    for (const child of from.children) {
+      const found = this.locate(id, child, path);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  private createPanel(
+    size: number,
+    view: PanelView = { type: "empty" },
+  ): PanelNode {
+    return { kind: "panel", id: this._ids.newPanelId(), view, size };
   }
 
   /**
@@ -135,76 +241,12 @@ class PanelLayoutTreeImpl implements PanelLayoutTree {
    */
   private splitIntoSiblings(parent: GroupNode, target: PanelNode): GroupNode {
     const halfSize = target.size / 2;
-    const newPanel: PanelNode = {
-      kind: "panel",
-      id: this._ids.newPanelId(),
-      view: { type: "empty" },
-      size: halfSize,
-    };
-    return {
-      ...parent,
-      children: parent.children.flatMap((child) =>
-        child === target ? [{ ...target, size: halfSize }, newPanel] : [child],
-      ),
-    };
-  }
-
-  resizeGroup(
-    groupId: GroupId,
-    sizes: Readonly<Record<PanelId | GroupId, number>>,
-  ): PanelLayoutTree {
-    const path = this.pathTo(groupId);
-    if (!path) {
-      throw new IllegalArgumentError(
-        `No group with id "${groupId}" exists in this tree.`,
-      );
-    }
-    const group = path.at(-1);
-    if (group?.kind !== "group") {
-      throw new IllegalArgumentError(
-        `Node with id "${groupId}" is not a group.`,
-      );
-    }
-
-    let changed = false;
-    const children = group.children.map((child) => {
-      const size = sizes[child.id];
-      if (size === undefined || size === child.size) return child;
-      changed = true;
-      return { ...child, size };
-    });
-    if (!changed) return this; // avoids a useless re-render
-
-    return new PanelLayoutTreeImpl(
-      PanelLayoutTreeImpl.rebuild(path, { ...group, children }),
-      this._ids,
+    return replaceChild(
+      parent,
+      target,
+      { ...target, size: halfSize },
+      this.createPanel(halfSize),
     );
-  }
-
-  toJSON(): LayoutNode {
-    return this._root;
-  }
-
-  /**
-   * Computes the path of `LayoutNode`s from `from` to the node with id `id`.
-   * @param id the id of the target node.
-   * @param from the `LayoutNode` from which to start the search; defaults to
-   * the root of this tree.
-   * @returns the nodes from `from` (first) to the target (last), or `undefined`
-   * if no node with such id exists under `from`.
-   */
-  private pathTo(
-    id: PanelId | GroupId,
-    from: LayoutNode = this._root,
-  ): LayoutNode[] | undefined {
-    if (from.id === id) return [from];
-    if (from.kind === "group") {
-      for (const child of from.children) {
-        const subPath = this.pathTo(id, child);
-        if (subPath) return [from, ...subPath];
-      }
-    }
-    return undefined;
   }
 
   /**
@@ -219,15 +261,10 @@ class PanelLayoutTreeImpl implements PanelLayoutTree {
     axis: Axis,
     oldPanel: PanelNode,
     newPanelPosition: Position = "after",
-    newPanelView: PanelView = { type: "empty" },
+    newPanelView?: PanelView,
   ): GroupNode {
     const newPanelSize = PanelLayoutTreeImpl.NEW_PANEL_DEFAULT_SIZE;
-    const newPanel: PanelNode = {
-      kind: "panel",
-      id: this._ids.newPanelId(),
-      view: newPanelView,
-      size: newPanelSize,
-    };
+    const newPanel = this.createPanel(newPanelSize, newPanelView);
     const updatedOldPanel: PanelNode = {
       ...oldPanel,
       size: 100 - newPanelSize,
@@ -242,31 +279,5 @@ class PanelLayoutTreeImpl implements PanelLayoutTree {
           ? [newPanel, updatedOldPanel]
           : [updatedOldPanel, newPanel],
     };
-  }
-
-  /**
-   * Replaces the last node of `path` with `replacement` and rebuilds its
-   * ancestors. The branches outside the path remain the same objects.
-   * @param path the nodes from the root (first) to the node to replace (last);
-   * every node but the last one must be a `GroupNode`.
-   * @returns the new root.
-   */
-  private static rebuild(
-    path: LayoutNode[],
-    replacement: LayoutNode,
-  ): LayoutNode {
-    let current = replacement;
-    for (let i = path.length - 2; i >= 0; i--) {
-      const ancestor = path[i] as GroupNode; // every ancestor is a group
-      const replaced = path[i + 1];
-      const updated = current;
-      current = {
-        ...ancestor,
-        children: ancestor.children.map((child) =>
-          child === replaced ? updated : child,
-        ),
-      };
-    }
-    return current;
   }
 }

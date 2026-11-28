@@ -12,7 +12,7 @@ interface PanelContainerProps {
 /** A single panel (a leaf in a LayoutPanelTree) */
 export function PanelContainer({ panel }: PanelContainerProps) {
   const popover = usePopover();
-  const { split } = useLayoutActions();
+  const { split, deletePanel } = useLayoutActions();
 
   const panelMenuActions: MenuAction[] = [
     {
@@ -22,6 +22,10 @@ export function PanelContainer({ panel }: PanelContainerProps) {
     {
       label: "Dividi orizzontalmente il pannello",
       onClick: () => split(panel.id, "vertical"),
+    },
+    {
+      label: "Elimina pannello",
+      onClick: () => deletePanel(panel.id),
     },
   ];
 

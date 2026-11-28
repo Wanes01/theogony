@@ -16,6 +16,7 @@ interface LayoutActions {
     groupId: GroupId,
     sizes: Readonly<Record<PanelId | GroupId, number>>,
   ): void;
+  deletePanel(id: PanelId): void;
 }
 
 const LayoutActionsContext = createContext<LayoutActions | null>(null);
@@ -39,7 +40,14 @@ export default function PanelLayout() {
       setTree((t) => t.resizeGroup(groupId, sizes)),
     [],
   );
-  const actions = useMemo(() => ({ split, resizeGroup }), [split, resizeGroup]);
+  const deletePanel = useCallback(
+    (panelId: PanelId) => setTree((t) => t.removePanel(panelId)),
+    [],
+  );
+  const actions = useMemo(
+    () => ({ split, resizeGroup, deletePanel }),
+    [split, resizeGroup, deletePanel],
+  );
 
   return (
     <LayoutActionsContext.Provider value={actions}>
