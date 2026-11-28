@@ -4,6 +4,7 @@ import Card from "@components/ui/cards/Card";
 import type { MenuAction } from "@components/menu/types";
 import { usePopover } from "@components/menu/usePopover";
 import DropdownMenu from "@components/menu/DropdownMenu";
+import { useTranslation } from "react-i18next";
 
 interface PanelContainerProps {
   readonly panel: PanelNode;
@@ -14,20 +15,22 @@ export function PanelContainer({ panel }: PanelContainerProps) {
   const popover = usePopover();
   const { split, deletePanel, isRoot } = useLayoutActions();
 
+  const { t } = useTranslation("panelActions");
+
   const forbiddenRootActions: MenuAction[] = [
     {
-      label: "Elimina pannello",
+      label: t("deletePanel"),
       onClick: () => deletePanel(panel.id),
     },
   ];
 
   const panelMenuActions: MenuAction[] = [
     {
-      label: "Dividi verticalmente il pannello",
+      label: t("splitVertically"),
       onClick: () => split(panel.id, "horizontal"),
     },
     {
-      label: "Dividi orizzontalmente il pannello",
+      label: t("splitHorizontally"),
       onClick: () => split(panel.id, "vertical"),
     },
     ...(!isRoot(panel.id) ? forbiddenRootActions : []),

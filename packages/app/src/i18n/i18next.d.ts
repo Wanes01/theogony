@@ -5,6 +5,9 @@ declare module "i18next" {
   interface CustomTypeOptions {
     // TODO: create a common NS for generic translations
     defaultNS: "common";
-    resources: { workspace: typeof workspace };
+    resources: {
+      workspace: typeof workspace;
+      panelActions: typeof panelActions;
+    };
   }
 }
