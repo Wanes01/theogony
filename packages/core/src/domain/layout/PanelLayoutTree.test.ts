@@ -576,3 +576,90 @@ describe("resizeGroup", () => {
     );
   });
 });
+
+describe("isRoot", () => {
+  describe("when the root is a group", () => {
+    it("returns true for the root group", () => {
+      const { tree } = makeTree();
+      expect(tree.isRoot(groupId("root"))).toBe(true);
+    });
+
+    it("returns false for a panel that is a direct child of the root", () => {
+      const { tree } = makeTree();
+      expect(tree.isRoot(panelId("a"))).toBe(false);
+    });
+
+    it("returns false for a nested group", () => {
+      const { tree } = makeTree();
+      expect(tree.isRoot(groupId("g"))).toBe(false);
+    });
+
+    it("returns false for a deeply nested panel", () => {
+      const { tree } = makeTree();
+      expect(tree.isRoot(panelId("b"))).toBe(false);
+    });
+  });
+
+  describe("when the root is a panel", () => {
+    it("returns true for the root panel", () => {
+      const tree = treeOf(panel("root", 100));
+      expect(tree.isRoot(panelId("root"))).toBe(true);
+    });
+
+    it("returns true for the default panel of an empty tree", () => {
+      const tree = PanelLayoutTree({ ids: sequentialIds() });
+      expect(tree.isRoot(panelId("1"))).toBe(true);
+    });
+  });
+
+  describe("after modifying the tree", () => {
+    it("stops being true for the old root panel once it is split", () => {
+      const tree = treeOf(panel("root", 100)).splitPanel(
+        panelId("root"),
+        "horizontal",
+      );
+
+      expect(tree.isRoot(panelId("root"))).toBe(false);
+      expect(tree.isRoot(groupId("1"))).toBe(true);
+    });
+
+    it("becomes true for the panel that remains after the root group collapses", () => {
+      const tree = treeOf(
+        group("root", "horizontal", 100, [panel("a", 50), panel("b", 50)]),
+      ).removePanel(panelId("b"));
+
+      expect(tree.isRoot(panelId("a"))).toBe(true);
+      // the old root group no longer exists in the tree
+      expect(() => tree.isRoot(groupId("root"))).toThrow(IllegalArgumentError);
+    });
+
+    it("keeps answering true for the same root after a resize", () => {
+      const { tree } = makeTree();
+      const resized = tree.resizeGroup(groupId("root"), { [panelId("a")]: 70 });
+
+      expect(resized.isRoot(groupId("root"))).toBe(true);
+    });
+  });
+
+  describe("errors", () => {
+    it("throws if the panel is not present in the tree", () => {
+      const { tree } = makeTree();
+      expect(() => tree.isRoot(panelId("not-in-this-tree"))).toThrow(
+        IllegalArgumentError,
+      );
+      expect(() => tree.isRoot(panelId("not-in-this-tree"))).toThrow(
+        /No panel with id "panel-not-in-this-tree"/,
+      );
+    });
+
+    it("throws if the group is not present in the tree", () => {
+      const { tree } = makeTree();
+      expect(() => tree.isRoot(groupId("not-in-this-tree"))).toThrow(
+        IllegalArgumentError,
+      );
+      expect(() => tree.isRoot(groupId("not-in-this-tree"))).toThrow(
+        /No group with id "group-not-in-this-tree"/,
+      );
+    });
+  });
+});
