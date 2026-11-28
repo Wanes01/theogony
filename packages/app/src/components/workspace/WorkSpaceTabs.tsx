@@ -90,8 +90,6 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
     }
   }
 
-  const selectedTab = tabs.find((t) => t.id === selectedId);
-
   return (
     <div className="flex flex-col gap-1 h-full w-full">
       <DndContext
@@ -129,7 +127,14 @@ export default function WorkSpaceTabs({ initialTabs }: WorkSpaceTabsProps) {
           </ul>
         </SortableContext>
       </DndContext>
-      <div className="flex-1">{selectedTab?.content}</div>
+      {tabs.map((tab) => (
+        <div
+          key={tab.id}
+          className={tab.id === selectedId ? "flex-1" : "hidden"}
+        >
+          {tab.content}
+        </div>
+      ))}
     </div>
   );
 }
